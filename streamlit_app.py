@@ -31,62 +31,71 @@ def generate_data(jumlah):
     return pd.DataFrame(data)
 
 # Streamlit antarmuka utama
-st.title("Studi Kasus Penghitungan Penghasilan Bulanan Karyawan")
+st.title("Penghitungan Penghasilan Bulanan Karyawan")
 
 # Input jumlah karyawan
 jumlah_karyawan = st.number_input("Masukkan jumlah karyawan:", min_value=10, max_value=10000, value=100)
 
+# Inisialisasi variabel
+if 'data_karyawan' not in st.session_state:
+    st.session_state.data_karyawan = generate_data(jumlah_karyawan)
+if 'time_iterative' not in st.session_state:
+    st.session_state.time_iterative = 0
+if 'time_recursive' not in st.session_state:
+    st.session_state.time_recursive = 0
+
 # Tombol untuk memulai perhitungan
 if st.button("Hitung Total Penghasilan"):
     # Generate data karyawan
-    data_karyawan = generate_data(jumlah_karyawan)
-    
+    st.session_state.data_karyawan = generate_data(jumlah_karyawan)
+
     # Perhitungan iteratif
     start_time_iterative = time.time()
-    total_iterative = hitung_iteratif(data_karyawan)
-    time_iterative = time.time() - start_time_iterative
+    total_iterative = hitung_iteratif(st.session_state.data_karyawan)
+    st.session_state.time_iterative = time.time() - start_time_iterative
 
     # Perhitungan rekursif
     start_time_recursive = time.time()
-    total_recursive = hitung_rekursif(data_karyawan)
-    time_recursive = time.time() - start_time_recursive
+    total_recursive = hitung_rekursif(st.session_state.data_karyawan)
+    st.session_state.time_recursive = time.time() - start_time_recursive
 
     # Tampilkan hasil
     st.write("### Hasil Perhitungan")
     st.write(f"Total Penghasilan (Iteratif): {total_iterative:,}")
-    st.write(f"Waktu Eksekusi (Iteratif): {time_iterative:.6f} detik")
+    st.write(f"Waktu Eksekusi (Iteratif): {st.session_state.time_iterative:.6f} detik")
     st.write(f"Total Penghasilan (Rekursif): {total_recursive:,}")
-    st.write(f"Waktu Eksekusi (Rekursif): {time_recursive:.6f} detik")
+    st.write(f"Waktu Eksekusi (Rekursif): {st.session_state.time_recursive:.6f} detik")
 
-    # Tampilkan tabel data
-    st.write("### Data Karyawan")
-    st.dataframe(data_karyawan)
+# Tampilkan tabel data
+st.write("### Data Karyawan")
+st.dataframe(st.session_state.data_karyawan)
 
-    # Membuat tabel perbandingan waktu eksekusi
-    comparison_data = {
-        "Metode": ["Iteratif", "Rekursif"],
-        "Waktu Eksekusi (detik)": [time_iterative, time_recursive]
-    }
-    comparison_df = pd.DataFrame(comparison_data)
-    st.write("### Tabel Perbandingan Waktu Eksekusi")
-    st.dataframe(comparison_df)
+# Membuat tabel perbandingan waktu eksekusi
+comparison_data = {
+    "Metode": ["Iteratif", "Rekursif"],
+    "Waktu Eksekusi (detik)": [st.session_state.time_iterative, st.session_state.time_recursive]
+}
+comparison_df = pd.DataFrame(comparison_data)
+st.write("### Tabel Perbandingan Waktu Eksekusi")
+st.dataframe(comparison_df)
 
-    # Membuat grafik perbandingan waktu eksekusi iteratif vs rekursif pada berbagai ukuran data
+# Membuat grafik perbandingan waktu eksekusi
+if st.session_state.time_iterative > 0 and st.session_state.time_recursive > 0:
     n_values = range(100, jumlah_karyawan + 1, 100)
     iterative_times = []
     recursive_times = []
 
     for n in n_values:
         data_sample = generate_data(n)
-
+        
         start_time_iter = time.time()
         hitung_iteratif(data_sample)
         iterative_times.append(time.time() - start_time_iter)
-
+        
         start_time_rec = time.time()
         hitung_rekursif(data_sample)
         recursive_times.append(time.time() - start_time_rec)
-
+        
     # Plot grafik
     fig, ax = plt.subplots()
     ax.plot(n_values, iterative_times, marker='o', label='Iteratif', color='blue')
